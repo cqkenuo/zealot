@@ -8,8 +8,17 @@ Rails.application.routes.draw do
   #############################################
   # User
   #############################################
-  devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks' }
-
+  devise_for :users, skip: :registrations, controllers: { omniauth_callbacks: 'users/omniauth_callbacks' }
+  devise_scope :user do
+    resource :registration,
+      only: [:new, :create, :edit, :update],
+      path: 'users',
+      path_names: { new: 'sign_up' },
+      controller: 'users/registrations',
+      as: :user_registration do
+        get :cancel
+      end
+  end
   #############################################
   # App
   #############################################
