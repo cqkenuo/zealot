@@ -21,7 +21,7 @@ class Channel < ApplicationRecord
   validates :slug, uniqueness: true
 
   def latest_release
-    releases.take.order(id: :desc)
+    releases.last
   end
 
   def recently_releases(limit = 10)
@@ -43,7 +43,7 @@ class Channel < ApplicationRecord
     releases.select(:release_version)
             .group(:release_version)
             .map(&:release_version)
-            .reverse
+            .sort { |a,b| Gem::Version.new(b) <=> Gem::Version.new(a) }
   end
 
   def release_version_count(version)
@@ -77,6 +77,10 @@ class Channel < ApplicationRecord
 
   def encode_password
     Digest::MD5.hexdigest(password)
+  end
+
+  def devices
+    releases.distinct.left_joins(:devices)
   end
 
   # def self.find_by_release(release)

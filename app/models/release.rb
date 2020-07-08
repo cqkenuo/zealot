@@ -9,6 +9,7 @@ class Release < ApplicationRecord
   scope :latest, -> { order(version: :desc).first }
 
   belongs_to :channel
+  has_and_belongs_to_many :devices
 
   validates :bundle_id, :release_version, :build_version, :file, presence: true
   validate :bundle_id_matched, on: :create
@@ -25,13 +26,9 @@ class Release < ApplicationRecord
   paginates_per     20
   max_paginates_per 50
 
-  def self.version_by_channel(slug, version = nil)
-    channel = Channel.friendly.find slug
-    if version
-      channel.releases.find_by version: version
-    else
-      channel.releases.latest
-    end
+  def self.version_by_channel(channel_slug, release_id)
+    channel = Channel.friendly.find(channel_slug)
+    channel.releases.find(release_id)
   end
 
   # 上传pp
@@ -65,7 +62,10 @@ class Release < ApplicationRecord
           if parser.os == AppInfo::Platform::IOS &&
              parser.release_type == AppInfo::IPA::ExportType::ADHOC &&
              parser.devices.present?
-            release.devices = parser.devices
+
+            parser.devices.each do |udid|
+              release.devices << Device.find_or_create_by(udid: udid)
+            end
           end
         rescue AppInfo::UnkownFileTypeError
           release.errors.add(:file, '上传的应用无法正确识别')
@@ -87,7 +87,7 @@ class Release < ApplicationRecord
   def size
     file&.size
   end
-  alias file_size size
+  alias_method :file_size, :size
 
   def short_git_commit
     return nil if git_commit.blank?
@@ -102,21 +102,18 @@ class Release < ApplicationRecord
   end
 
   def download_url
-    api_apps_download_url(channel.slug, version)
+    download_release_url(id)
   end
 
   def install_url
     return download_url if channel.device_type.casecmp('android').zero?
 
-    download_url = api_apps_install_url(
-      channel.slug, version,
-      protocol: Rails.env.development? ? 'http' : 'https'
-    )
+    download_url = channel_release_install_url(channel.slug, id)
     "itms-services://?action=download-manifest&url=#{download_url}"
   end
 
   def release_url
-    channel_release_url channel, self
+    channel_release_url(channel, self)
   end
 
   def qrcode_url(size = :thumb)

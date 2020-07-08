@@ -56,19 +56,20 @@ FROM ruby:2.6-alpine
 
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION
+ARG TAG
 
+ARG ZEALOT_VERSION="4.0.0.beta4"
 ARG REPLACE_CHINA_MIRROR="true"
 ARG ORIGINAL_REPO_URL="http://dl-cdn.alpinelinux.org"
 ARG MIRROR_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn"
 ARG RUBYGEMS_SOURCE="https://gems.ruby-china.com/"
-ARG PACKAGES="tzdata imagemagick imagemagick-dev postgresql-dev"
+ARG PACKAGES="tzdata imagemagick imagemagick-dev postgresql-dev postgresql-client openssl openssl-dev"
 ARG RUBY_GEMS="bundler"
 ARG APP_ROOT=/app
 
 LABEL im.ews.zealot.build-date=$BUILD_DATE \
       im.ews.zealot.vcs-ref=$VCS_REF \
-      im.ews.zealot.version=$VERSION \
+      im.ews.zealot.version="$ZEALOT_VERSION-$TAG" \
       im.ews.zealot.name="Zealot" \
       im.ews.zealot.description="Over The Air Server for deployment of Android and iOS apps" \
       im.ews.zealot.url="https://zealot.ews.im/" \
@@ -76,9 +77,10 @@ LABEL im.ews.zealot.build-date=$BUILD_DATE \
       im.ews.zealot.maintaner="icyleaf <icyleaf.cn@gmail.com>"
 
 ENV TZ="Asia/Shanghai" \
+    DOCKER_TAG="$TAG" \
     BUNDLE_APP_CONFIG="$APP_ROOT/.bundle" \
-    ZEALOT_VERSION="$VERSION" \
     ZEALOT_VCS_REF="$VCS_REF" \
+    ZEALOT_VERSION="$ZEALOT_VERSION" \
     RAILS_ENV="production"
 
 # System dependencies
@@ -92,13 +94,15 @@ RUN set -ex && \
     apk --update --no-cache add $PACKAGES && \
     cp /usr/share/zoneinfo/$TZ /etc/localtime && \
     echo $TZ > /etc/timezone && \
-    gem install $RUBY_GEMS
+    gem install $RUBY_GEMS && \
+    echo "0 */5 * * * /bin/sh -l -c 'find /tmp -type f -mmin +300 -exec rm -f {} \;' >> /var/log/clean_tmp_cron.log 2>&1" > /etc/crontabs/clean_tmp && \
+    chmod 0644 /etc/crontabs/clean_tmp && \
+    touch /var/log/clean_tmp_cron.log && \
+    crontab /etc/crontabs/clean_tmp
 
 WORKDIR $APP_ROOT
 
 COPY --from=builder $APP_ROOT $APP_ROOT
-
-ENV ZEALOT_VERSION="4.0.0"
 
 EXPOSE 3000
 

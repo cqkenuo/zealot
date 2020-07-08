@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  mount LetterOpenerWeb::Engine, at: 'letter_opener' if Rails.env.development?
-
   root to: 'dashboards#index'
 
   #############################################
@@ -11,7 +9,7 @@ Rails.application.routes.draw do
   devise_for :users, skip: :registrations, controllers: { omniauth_callbacks: 'users/omniauth_callbacks' }
   devise_scope :user do
     resource :registration,
-      only: [:new, :create, :edit, :update],
+      only: %i[new create edit update],
       path: 'users',
       path_names: { new: 'sign_up' },
       controller: 'users/registrations',
@@ -37,7 +35,11 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :releases, except: :index, path_names: { new: 'upload' } do
+    resources :releases, path_names: { new: 'upload' } do
+      scope module: :releases do
+        get :install, to: 'install#show'
+      end
+
       scope module: :releases do
         get :qrcode, to: 'qrcode#show'
       end
@@ -49,6 +51,8 @@ Rails.application.routes.draw do
 
     scope module: :channels do
       resources :versions, only: %i[index show], id: /(.+)+/
+      resources :branches, only: %i[index]
+      resources :release_types, only: %i[index]
     end
   end
 
@@ -60,7 +64,32 @@ Rails.application.routes.draw do
   #############################################
   # Teardown
   #############################################
-  resources :teardowns, only: %i[show new create], path_names: { new: 'upload' }
+  resources :teardowns, only: %i[index show new create], path_names: { new: 'upload' }
+
+  #############################################
+  # Download
+  #############################################
+  namespace :download do
+    resources :releases, only: :show do
+      member do
+        get ':filename', action: :download, filename: /.+/, as: 'filename'
+      end
+    end
+
+    resources :debug_files, only: :show do
+      member do
+        get ':filename', action: :download, filename: /.+/, as: 'filename'
+      end
+    end
+  end
+
+  #############################################
+  # UDID (iOS)
+  #############################################
+  get 'udid', to: 'udid#index'
+  get 'udid/install', to: 'udid#install'
+  post 'udid/retrieve', to: 'udid#create'
+  get 'udid/:udid', to: 'udid#show', as: 'udid_result'
 
   #############################################
   # Admin
@@ -80,6 +109,11 @@ Rails.application.routes.draw do
   end
 
   #############################################
+  # Development Only
+  #############################################
+  mount LetterOpenerWeb::Engine, at: 'letter_opener' if Rails.env.development?
+
+  #############################################
   # API v1
   #############################################
   namespace :api do
@@ -90,8 +124,7 @@ Rails.application.routes.draw do
       get 'version_exist', to: 'version_exist#show'
       get 'versions', to: 'versions#index'
       get 'versions/(:release_version)', to: 'versions#show'
-      get ':slug(/:version)/install', to: 'install_url#show', as: 'install'
-      get ':slug(/:version)/download', to: 'download#show', as: 'download'
+
       get ':id', action: :show
       patch ':id', action: :update
       delete ':id', action: :destroy
@@ -101,12 +134,17 @@ Rails.application.routes.draw do
     post 'debug_files/upload', to: 'debug_files#create'
     get 'debug_files/download', to: 'debug_files/download#show'
     resources :debug_files, except: %i[create new edit]
+    resources :devices, only: %i[update]
 
     namespace :jenkins do
       get 'projects', to: 'projects#index'
       get 'projects/:project', to: 'projects#show', as: 'project'
       get 'projects/:project/build', to: 'build#create', as: 'project_build'
       get 'projects/:project/status/(:id)', to: 'status#show', as: 'project_status'
+    end
+
+    namespace :zealot do
+      resources :version, only: :index
     end
   end
 

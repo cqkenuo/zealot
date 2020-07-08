@@ -6,7 +6,7 @@ git_source(:github) { |repo_name| "https://github.com/#{repo_name}" }
 
 ruby '>= 2.3.0', '< 2.8.0'
 
-gem 'puma', '~> 4.3.3'
+gem 'puma', '~> 4.3.5'
 gem 'rails', '~> 6.0.3'
 gem 'rails-i18n', '~> 6.0.0'
 gem 'rake', '~> 13.0.1'
@@ -17,13 +17,14 @@ gem 'redis', '~> 4.1.4'
 
 # API
 gem 'active_model_serializers', '~> 0.10.10'
-gem 'graphql', '~> 1.10.9'
+gem 'graphql', '~> 1.10.10'
 gem 'rack-cors', '~> 1.1.1'
 
 # View
 ## 模板引擎
 gem 'jb', '~> 0.7.1'
 gem 'slim-rails', '~> 3.2.0'
+
 ## 表单生成
 gem 'simple_form', '~> 5.0'
 
@@ -37,32 +38,36 @@ gem 'carrierwave'
 gem 'mini_magick'
 
 # Helper
-# HTTP 请求
+## HTTP 请求
 gem 'http'
-# 用户认证
-gem 'devise', '~> 4.7.1'
+## 用户认证
+gem 'devise', '~> 4.7.2'
 gem 'devise-i18n', '~> 1.9.0'
 gem 'omniauth', '~> 1.9'
 gem 'omniauth-google-oauth2', '~> 0.8.0'
 gem 'gitlab_omniauth-ldap', '~> 2.1.1', require: 'omniauth-ldap'
 gem 'pundit', '~> 2.1.0'
 
-# 系统信息
+## UDID
+gem 'openssl', '~> 2.2.0'
+gem 'plist', '~> 3.5.0'
+
+## 系统信息
 gem 'sys-filesystem', '~> 1.3.4'
 gem 'vmstat', '~> 2.3.0'
 
-# 异常报错上报
+## 异常报错上报
 gem 'sentry-raven'
 
-# Jenkins SDK
+## Jenkins SDK
 gem 'jenkins_api_client'
 
-# 生成条形码/二维码
+## 生成条形码/二维码
 gem 'rqrcode'
 
 # 异步队列
 gem 'activejob-status'
-gem 'sidekiq', '6.0.5' # 6.0.6 有 bug：https://github.com/mperham/sidekiq/pull/4502
+gem 'sidekiq', '6.0.7' # 6.0.6 有 bug：https://github.com/mperham/sidekiq/pull/4502
 gem 'sidekiq-cron', '~> 1.2'
 
 # Assets
